@@ -1,0 +1,71 @@
+#!/usr/bin/env zsh
+
+WORLD=$HOMEBREW_PREFIX/var/world
+
+list() {
+    cat $WORLD
+}
+
+add() {
+    local BREW_LIST=$(brew list)
+    for name in "$@"; do
+        local full_name=$(brew info $name | head -1 | awk -F: '{print $1}' | sed -E 's/.*\/(.*)/\1/')
+        [[ $BREW_LIST =~ $full_name([[:space:]]|$) ]] && echo $full_name >> $WORLD
+    done
+    sort -uo $WORLD $WORLD
+}
+
+remove() {
+    for name in "$@"; do
+        local full_name=$(brew info $name | head -1 | awk -F: '{print $1}' | sed -E 's/.*\/(.*)/\1/')
+        sed -i~ "/$full_name$/d" $WORLD
+    done
+    rm -f $WORLD~
+}
+
+install() {
+    brew install "$@" && add "$@"
+}
+
+uninstall() {
+    brew uninstall "$@" && remove "$@" && clean
+}
+
+clean() {
+    local ORPHANS=$(diff $WORLD <(brew leaves | sed -E 's/.*\/(.*)/\1/') | grep '>' | awk '{print $2}')
+    if [ ! -z "$ORPHANS" ]; then
+        brew uninstall $(echo -n $ORPHANS) && clean
+    fi
+}
+
+destroy() {
+    rm -f $WORLD
+}
+
+error() {
+    echo "\e[31mError:\e[0m Unknown command: $1" >&2
+    return 1
+}
+
+[ ! -f $WORLD ] && touch $WORLD
+
+case $1 in
+    list)
+        list ;;
+    add)
+        add "${@:2}" ;;
+    remove)
+        remove "${@:2}" ;;
+    install)
+        install "${@:2}" ;;
+    uninstall)
+        uninstall "${@:2}" ;;
+    clean)
+        clean ;;
+    destroy)
+        destroy ;;
+    '')
+        ;;
+    *)
+        error $1 ;;
+esac
