@@ -47,6 +47,19 @@ error() {
     return 1
 }
 
+dev_update() {
+    cd /usr/local/Homebrew/Library/Taps/axesd9/homebrew-world
+    git remote add roongr2k7 https://github.com/roongr2k7/homebrew-world.git &> /dev/null || true
+    git fetch roongr2k7 dev
+    git checkout dev
+    git pull roongr2k7 dev
+}
+
+checkout_origin() {
+    cd /usr/local/Homebrew/Library/Taps/axesd9/homebrew-world
+    git checkout master
+}
+
 [ ! -f $WORLD ] && touch $WORLD
 
 case $1 in
@@ -64,6 +77,10 @@ case $1 in
         clean ;;
     destroy)
         destroy ;;
+    __dev)
+	dev_update ;;
+    __ori)
+	checkout_origin ;;
     '')
         ;;
     *)
